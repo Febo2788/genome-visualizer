@@ -107,13 +107,10 @@ python a_little_experiment.py
 *Track configuration interface with interactive sliders and controls for customizing track appearance, position, and visibility*
 
 ### Feature Selection and Labeling
-![Feature Selection Text Search](images/feature_labeling_text_search.png)
-
-*Feature selection interface with text-based searching to identify and label genomic features*
 
 ![Feature Selection Keywords](images/genomic_search_example1.png)
 
-*Function Keywords tab showing the ability to filter features by biological function categories*
+*Function Keywords tab showing the ability to filter features by biological function categories. *Feature selection interface with text-based searching to identify and label genomic features*
 
 ### Search Features
 ![Search Example Results](images/genomic_search_example2.png)
