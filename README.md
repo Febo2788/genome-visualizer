@@ -135,7 +135,7 @@ The tool generates publication-quality visualizations:
 - **Track Visualization**: If tracks appear incorrectly, use the track configuration options to adjust display parameters
 
 ## Notes
-
+- Linear view is still in development
 - For large genomes, the BLAST comparison process may take significant time
 - Customize binning size and step size based on your genome size for optimal GC content visualization
 - Use the "Configure All Tracks" option for detailed control over track appearance
