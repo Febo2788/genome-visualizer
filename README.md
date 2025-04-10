@@ -1,6 +1,6 @@
 # Genomic Visualization Tool
 
-A comprehensive Python-based tool for creating both linear and circular genomic visualizations from GenBank files. This tool provides a user-friendly GUI for generating publication-quality comparative genomic diagrams, significantly improving upon existing tools like BRIG by eliminating the need for data cleaning, offering more color options, and providing a live visualization interface.
+A comprehensive Python-based tool for creating both linear and circular genomic visualizations from GenBank **full** files. This tool provides a user-friendly GUI for generating publication-quality comparative genomic diagrams, significantly improving upon existing tools like BRIG by eliminating the need for data cleaning, offering more color options, and providing a live visualization interface.
 
 ## Features
 
