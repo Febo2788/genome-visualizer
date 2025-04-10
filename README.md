@@ -72,7 +72,7 @@ Note: The circular diagram module includes a function to automatically install i
 
 1. Run the script:
 ```bash
-python a_little_experiment.py
+python genomic-visualizer.py
 ```
 
 2. Select your preferred diagram type (Linear or Circular) from the opening dialog.
