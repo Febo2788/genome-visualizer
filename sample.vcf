@@ -1,0 +1,14 @@
+##fileformat=VCFv4.2
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Total number of reads">
+##INFO=<ID=MQ,Number=1,Type=Integer,Description="Mapping Quality">
+##INFO=<ID=CSQ,Number=.,Type=String,Description="Variant Effect Predictor annotation">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	Sample1	Sample2
+chr1	1000	rs001	A	T	60	PASS	DP=30;MQ=60	GT:DP:GQ	0/1:30:40	0/0:28:35
+chr1	2500	rs002	GC	G	45	PASS	DP=25;MQ=55	GT:DP:GQ	1/1:25:30	0/1:26:32
+chr1	5000	rs003	T	TA	50	PASS	DP=35;MQ=60	GT:DP:GQ	0/1:35:45	0/0:33:40
+chr1	8000	.	ATCG	A	40	PASS	DP=20;MQ=50	GT:DP:GQ	0/1:20:25	0/1:22:28
+chr1	12000	rs004	A	<DEL>	55	PASS	END=12500;DP=28;MQ=60	GT:DP:GQ	0/1:28:38	0/0:29:36
+chr1	15000	rs005	C	G	65	PASS	DP=40;MQ=60;CSQ=G|missense_variant|MODERATE|BRCA1|ENSG001|ENST001|c.123A>G|p.Lys41Glu	GT:DP:GQ	1/1:40:50	0/1:39:45

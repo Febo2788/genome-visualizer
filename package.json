@@ -1,0 +1,74 @@
+{
+  "name": "gyre-genome-viewer",
+  "version": "1.0.0",
+  "description": "Gyre Genome Viewer",
+  "main": "main.js",
+  "scripts": {
+    "build": "node build.js",
+    "start": "node server.js",
+    "electron": "electron .",
+    "electron-dev": "npm run build && electron .",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist": "npm run build && electron-builder -mw",
+    "fetch-vendor": "node scripts/fetch-vendor.js",
+    "fetch-blast": "node scripts/fetch-blast.js"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "multer": "^2.1.1"
+  },
+  "devDependencies": {
+    "@babel/preset-react": "^7.23.0",
+    "electron": "^32.0.0",
+    "electron-builder": "^25.1.1",
+    "esbuild": "^0.20.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "com.gyre.genomviewer",
+    "productName": "Gyre",
+    "icon": "./icon.png",
+    "files": [
+      "main.js",
+      "server.js",
+      "build.js",
+      "Gyre - Genome Viewer.html",
+      "*.jsx",
+      "vendor/**",
+      "uploads/.gitkeep",
+      "node_modules/express/**",
+      "node_modules/multer/**",
+      "node_modules/body-parser/**",
+      "node_modules/cors/**"
+    ],
+    "extraResources": [
+      "blast-bin"
+    ],
+    "asarUnpack": [
+      "blast-bin/**"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "./icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "installerIcon": "./icon.ico",
+      "uninstallerIcon": "./icon.ico",
+      "installerHeaderIcon": "./icon.ico"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ]
+    }
+  }
+}
