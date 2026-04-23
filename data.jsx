@@ -166,48 +166,64 @@ function generateSyntheticGenomes() {
     { id: "ref", name: "Reference", length: GENOME_LENGTH, color: "#2B5F6B" },
     { id: "g1", name: "Strain A", length: Math.floor(GENOME_LENGTH * 0.98), color: "#5B8AA6" },
     { id: "g2", name: "Strain B", length: Math.floor(GENOME_LENGTH * 0.95), color: "#7FA876" },
+    { id: "g3", name: "Strain C", length: Math.floor(GENOME_LENGTH * 0.92), color: "#C4976A" },
   ];
 }
 
 const COMPARISON_GENOMES = generateSyntheticGenomes();
 
 // MULTI_SYNTENY: BLAST ribbons between adjacent genomes in synteny view
-// Generate demo BLAST alignments between reference and strains
+// Generate demo BLAST alignments with varied sizes and high density
 function generateDemoSynteny() {
   const rnd = mulberry32(99);
-  const pairs = [];
-  // Create ~15 BLAST alignment pairs between ref and strain A
-  for (let i = 0; i < 15; i++) {
-    const refStart = Math.floor(rnd() * (GENOME_LENGTH - 50000));
-    const refEnd = refStart + 5000 + Math.floor(rnd() * 20000);
-    const g1Start = Math.floor(rnd() * (COMPARISON_GENOMES[1].length - 50000));
-    const g1End = g1Start + 5000 + Math.floor(rnd() * 20000);
-    pairs.push({
-      a: [refStart, refEnd],
-      b: [g1Start, g1End],
-      identity: 0.75 + rnd() * 0.24,
-      inverted: rnd() < 0.1,
-    });
-  }
 
-  const pairs2 = [];
-  // Create ~12 BLAST alignment pairs between strain A and strain B
-  for (let i = 0; i < 12; i++) {
-    const g1Start = Math.floor(rnd() * (COMPARISON_GENOMES[1].length - 50000));
-    const g1End = g1Start + 5000 + Math.floor(rnd() * 20000);
-    const g2Start = Math.floor(rnd() * (COMPARISON_GENOMES[2].length - 50000));
-    const g2End = g2Start + 5000 + Math.floor(rnd() * 20000);
-    pairs2.push({
-      a: [g1Start, g1End],
-      b: [g2Start, g2End],
-      identity: 0.70 + rnd() * 0.28,
-      inverted: rnd() < 0.15,
-    });
+  // Helper to generate variable-sized BLAST pairs
+  function generatePairs(fromLen, toLen, count) {
+    const p = [];
+    for (let i = 0; i < count; i++) {
+      // Vary segment sizes: some tiny, some small, some large
+      const sizeVariation = rnd();
+      let len;
+      if (sizeVariation < 0.2) {
+        len = 1000 + Math.floor(rnd() * 4000);  // very small: 1-5kb
+      } else if (sizeVariation < 0.5) {
+        len = 5000 + Math.floor(rnd() * 10000); // small: 5-15kb
+      } else if (sizeVariation < 0.8) {
+        len = 15000 + Math.floor(rnd() * 20000); // medium: 15-35kb
+      } else {
+        len = 35000 + Math.floor(rnd() * 50000); // large: 35-85kb
+      }
+
+      const aStart = Math.floor(rnd() * Math.max(1, fromLen - len));
+      const aEnd = Math.min(fromLen, aStart + len);
+      const bStart = Math.floor(rnd() * Math.max(1, toLen - (aEnd - aStart)));
+      const bEnd = Math.min(toLen, bStart + (aEnd - aStart));
+
+      p.push({
+        a: [aStart, aEnd],
+        b: [bStart, bEnd],
+        identity: 0.65 + rnd() * 0.34,
+        inverted: rnd() < 0.12,
+      });
+    }
+    return p;
   }
 
   return [
-    { from: 0, to: 1, pairs },
-    { from: 1, to: 2, pairs: pairs2 },
+    // Reference ↔ Strain A (dense, varied sizes)
+    { from: 0, to: 1, pairs: generatePairs(GENOME_LENGTH, COMPARISON_GENOMES[1].length, 40) },
+
+    // Strain A ↔ Strain B (dense, varied sizes)
+    { from: 1, to: 2, pairs: generatePairs(COMPARISON_GENOMES[1].length, COMPARISON_GENOMES[2].length, 35) },
+
+    // Strain B ↔ Strain C (new connection, varied sizes)
+    { from: 2, to: 3, pairs: generatePairs(COMPARISON_GENOMES[2].length, COMPARISON_GENOMES[3].length, 30) },
+
+    // Reference ↔ Strain B (cross-connection, varied sizes)
+    { from: 0, to: 2, pairs: generatePairs(GENOME_LENGTH, COMPARISON_GENOMES[2].length, 25) },
+
+    // Strain A ↔ Strain C (cross-connection, varied sizes)
+    { from: 1, to: 3, pairs: generatePairs(COMPARISON_GENOMES[1].length, COMPARISON_GENOMES[3].length, 20) },
   ];
 }
 
@@ -218,47 +234,32 @@ function generateDemoSyntenyFeatures() {
   const rnd = mulberry32(88);
   const cats = Object.keys(FEATURE_CATEGORIES);
 
-  // Generate features for strain A (slightly fewer than reference)
-  const g1Features = [];
-  let pos = 1500;
-  while (pos < COMPARISON_GENOMES[1].length - 2000) {
-    const length = 300 + Math.floor(rnd() * 2200);
-    const strand = rnd() > 0.48 ? 1 : -1;
-    const cat = cats[Math.floor(rnd() * cats.length)];
-    g1Features.push({
-      id: `g1_f${g1Features.length}`,
-      start: pos,
-      end: Math.min(pos + length, COMPARISON_GENOMES[1].length),
-      strand,
-      category: cat,
-      gene: `Strain_A_${Math.floor(pos / 10000)}`,
-      product: "",
-    });
-    pos += length + Math.floor(rnd() * 1800);
-  }
-
-  // Generate features for strain B (slightly fewer than strain A)
-  const g2Features = [];
-  pos = 1500;
-  while (pos < COMPARISON_GENOMES[2].length - 2000) {
-    const length = 300 + Math.floor(rnd() * 2100);
-    const strand = rnd() > 0.48 ? 1 : -1;
-    const cat = cats[Math.floor(rnd() * cats.length)];
-    g2Features.push({
-      id: `g2_f${g2Features.length}`,
-      start: pos,
-      end: Math.min(pos + length, COMPARISON_GENOMES[2].length),
-      strand,
-      category: cat,
-      gene: `Strain_B_${Math.floor(pos / 10000)}`,
-      product: "",
-    });
-    pos += length + Math.floor(rnd() * 1800);
+  // Helper to generate features for any genome
+  function generateFeaturesForGenome(length, prefix) {
+    const features = [];
+    let pos = 1500;
+    while (pos < length - 2000) {
+      const length = 300 + Math.floor(rnd() * 2200);
+      const strand = rnd() > 0.48 ? 1 : -1;
+      const cat = cats[Math.floor(rnd() * cats.length)];
+      features.push({
+        id: `${prefix}_f${features.length}`,
+        start: pos,
+        end: Math.min(pos + length, length),
+        strand,
+        category: cat,
+        gene: `${prefix}_${Math.floor(pos / 10000)}`,
+        product: "",
+      });
+      pos += length + Math.floor(rnd() * 1800);
+    }
+    return features;
   }
 
   return {
-    g1: g1Features,
-    g2: g2Features,
+    g1: generateFeaturesForGenome(COMPARISON_GENOMES[1].length, "Strain_A"),
+    g2: generateFeaturesForGenome(COMPARISON_GENOMES[2].length, "Strain_B"),
+    g3: generateFeaturesForGenome(COMPARISON_GENOMES[3].length, "Strain_C"),
   };
 }
 
