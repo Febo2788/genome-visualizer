@@ -920,7 +920,7 @@ function App() {
   const onAddBlastTrack = (genomeName) => {
     // Create a new BLAST ring track for the comparison genome
     const newId = `blast-ring-${Date.now()}-${Math.random()}`;
-    const colors = ['#5B8AA6', '#7FA876', '#C4976A', '#B67777', '#8878A8', '#D4A84A'];
+    const colors = ['#0066FF', '#00CC44', '#FF6600', '#FF3333', '#9933FF', '#FFCC00'];
     const colorIdx = tracks.filter(t => t.type === 'blast-ring').length % colors.length;
 
     const newTrack = {
