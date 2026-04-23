@@ -1,5 +1,7 @@
 # Gyre Genome Viewer
 
+> ⚠️ **Beta Release** - This is an early development version. Core functionality is stable, but the application continues to evolve. Expect changes and please report issues.
+
 A desktop application for interactive visualization and comparative analysis of genomic sequences. Gyre supports multiple visualization modes (circular, linear, synteny) and integrates BLAST for sequence comparison. All computations run locally without requiring internet connectivity or external dependencies.
 
 ## Installation
