@@ -158,11 +158,7 @@ npm run dist:win          # Build Windows installer
 
 ### Project Architecture
 
-See `CLAUDE.md` for detailed architecture documentation including:
-- Component structure and data flow
-- Build system design
-- BLAST integration
-- File format parsing
+Gyre is built with React for the frontend UI, Express.js for the backend API, and integrates NCBI BLAST+ for genomic sequence comparison. All computation runs locally on the user's machine without requiring internet connectivity.
 
 ## Citation
 
