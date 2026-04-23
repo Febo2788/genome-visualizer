@@ -16,7 +16,7 @@ The installer includes BLAST+ binaries and requires approximately 500MB of disk 
 
 ### macOS
 
-Support for macOS is under development.
+Currently none as I don't have a mac
 
 ## Getting Started
 
