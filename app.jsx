@@ -1,7 +1,7 @@
 // Main app shell — toolbar, view area, legend, tooltip
 // Orchestrates circular/linear/synteny views
 
-function Toolbar({ viewMode, onViewMode, onOpenFile, onExport, onTogglePreview, exportPreviewOn, genomeName, zoom, onZoom, viewStart, viewEnd, genomeLen, onViewWindow, onEraseOptionalTracks, onShowBlastSetup }) {
+function Toolbar({ viewMode, onViewMode, onOpenFile, onExport, onTogglePreview, exportPreviewOn, genomeName, zoom, onZoom, viewStart, viewEnd, genomeLen, onViewWindow, onEraseOptionalTracks, onShowBlastSetup, onShowColorSettings }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 0,
@@ -42,6 +42,11 @@ function Toolbar({ viewMode, onViewMode, onOpenFile, onExport, onTogglePreview, 
           ...ghostBtn, padding: '6px 12px', fontSize: 12,
         }}>
           Compare genomes…
+        </button>
+        <button onClick={onShowColorSettings} style={{
+          ...ghostBtn, padding: '6px 12px', fontSize: 12,
+        }}>
+          Colors…
         </button>
         <InfoIcon
           title="GenBank flat file · .gb / .gbk"
@@ -687,11 +692,32 @@ function App() {
 
   const genomeLen = window.GENOME_LENGTH || GENOME_LENGTH;
 
+  // Get effective color (custom or default)
+  const getFeatureColor = (category) => {
+    if (customColors[category]) return customColors[category];
+    const cat = FEATURE_CATEGORIES[category];
+    return cat ? cat.color : '#888';
+  };
+
+  // Save custom colors to localStorage
+  const updateCustomColor = (category, color) => {
+    const newColors = { ...customColors, [category]: color };
+    setCustomColors(newColors);
+    localStorage.setItem('gyre-custom-colors', JSON.stringify(newColors));
+  };
+
   const [labels, setLabels] = React.useState(window.DEMO_LABELS || []);
   const [availableLabels, setAvailableLabels] = React.useState(window.GENBANK_LABELS || window.DEMO_LABELS || []);
   const [highlights, setHighlights] = React.useState([
     { start: 1580000, end: 1890000, color: '#D4A84A', opacity: 0.14, label: 'RD1 / ESX-1 locus' },
   ]);
+
+  // Color settings
+  const [customColors, setCustomColors] = React.useState(() => {
+    const saved = localStorage.getItem('gyre-custom-colors');
+    return saved ? JSON.parse(saved) : {};
+  });
+  const [showColorSettings, setShowColorSettings] = React.useState(false);
 
   const [resolution, setResolution] = React.useState(300);
   const defaultView = { zoom: 1, panX: 0, panY: 0 };
@@ -931,6 +957,7 @@ function App() {
         onViewWindow={(a, b) => { setViewStart(a); setViewEnd(b); }}
         onEraseOptionalTracks={onEraseOptionalTracks}
         onShowBlastSetup={() => setShowBlastModal(true)}
+        onShowColorSettings={() => setShowColorSettings(true)}
       />
 
       <BlastSetupModal
@@ -941,6 +968,60 @@ function App() {
         status={blastStatus}
         genomeLen={genomeLen}
       />
+
+      {showColorSettings && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center',
+          justifyContent: 'center', zIndex: 200, fontFamily: FONT_SANS,
+        }}>
+          <div style={{
+            background: UI.bg, border: `1px solid ${UI.border}`,
+            borderRadius: 8, padding: 24, maxWidth: 400, maxHeight: '80vh',
+            overflow: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+          }}>
+            <h2 style={{ margin: '0 0 16px 0', fontSize: 16, fontWeight: 600, color: UI.ink }}>
+              Feature Colors
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {Object.entries(FEATURE_CATEGORIES).map(([cat, data]) => (
+                <div key={cat} style={{
+                  display: 'flex', alignItems: 'center', gap: 10, padding: 8,
+                  background: UI.panel, borderRadius: 4, border: `1px solid ${UI.border}`,
+                }}>
+                  <input
+                    type="color"
+                    value={getFeatureColor(cat)}
+                    onChange={(e) => updateCustomColor(cat, e.target.value)}
+                    style={{ width: 40, height: 32, border: 'none', borderRadius: 4, cursor: 'pointer' }}
+                  />
+                  <span style={{ flex: 1, fontSize: 13, color: UI.ink }}>{data.label}</span>
+                  <span style={{ fontFamily: FONT_MONO, fontSize: 11, color: UI.muted }}>
+                    {getFeatureColor(cat).toUpperCase()}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'flex-end' }}>
+              <button onClick={() => {
+                setCustomColors({});
+                localStorage.removeItem('gyre-custom-colors');
+              }} style={{
+                ...ghostBtn, padding: '6px 12px', fontSize: 12,
+                color: UI.warn,
+              }}>
+                Reset
+              </button>
+              <button onClick={() => setShowColorSettings(false)} style={{
+                ...ghostBtn, padding: '6px 12px', fontSize: 12,
+                background: UI.ink, color: UI.bg,
+              }}>
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
         <TrackPanel

@@ -5,16 +5,16 @@ const GENOME_LENGTH = 4411532;
 const GENOME_NAME = "M. tuberculosis H37Rv";
 const GENOME_ACCESSION = "NC_000962.3";
 
-// Feature categories with curated colors (muted scientific palette)
+// Feature categories with bright, vibrant colors for better visibility
 const FEATURE_CATEGORIES = {
-  "Information storage":    { color: "#5B8AA6", label: "Information storage & processing" },
-  "Cellular processes":     { color: "#7FA876", label: "Cellular processes & signaling" },
-  "Metabolism":             { color: "#C4976A", label: "Metabolism" },
-  "Poorly characterized":   { color: "#9C9C9C", label: "Poorly characterized" },
-  "Mobile elements":        { color: "#B67777", label: "Mobile elements" },
-  "RNA":                    { color: "#8878A8", label: "RNA (tRNA / rRNA / ncRNA)" },
-  "Regulatory":             { color: "#D4A84A", label: "Regulatory" },
-  "Hypothetical":           { color: "#BCB7A8", label: "Hypothetical" },
+  "Information storage":    { color: "#0066FF", label: "Information storage & processing" },
+  "Cellular processes":     { color: "#00CC44", label: "Cellular processes & signaling" },
+  "Metabolism":             { color: "#FF6600", label: "Metabolism" },
+  "Poorly characterized":   { color: "#999999", label: "Poorly characterized" },
+  "Mobile elements":        { color: "#FF3333", label: "Mobile elements" },
+  "RNA":                    { color: "#9933FF", label: "RNA (tRNA / rRNA / ncRNA)" },
+  "Regulatory":             { color: "#FFCC00", label: "Regulatory" },
+  "Hypothetical":           { color: "#00CCCC", label: "Hypothetical" },
 };
 
 // Deterministic PRNG so layout is stable between reloads
