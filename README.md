@@ -1,8 +1,6 @@
 # Gyre — Genome Viewer
 
-So I found a few genome visualization programs online, right? But honestly, they all felt kinda outdated or clunky. One was missing features, another had this weird interface, and they were all a pain to set up. So I decided to just make one myself.
-
-Here's what I built:
+I found a few genome visualization programs online But honestly, they all felt kinda outdated so i decided to build this.
 
 ## How It Works
 
