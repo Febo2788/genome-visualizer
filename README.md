@@ -1,101 +1,189 @@
-# Gyre — Genome Viewer
+# Gyre Genome Viewer
 
-I found a few genome visualization programs online But honestly, they all felt kinda outdated so i decided to build this.
-
-## How It Works
-
-1. **Drop a GenBank file** → it shows up as a gorgeous circular diagram with all your genes and annotations
-2. **Want to compare two genomes?** → Run BLAST and watch matching regions light up in real-time
-3. **Got results?** → Export as PNG, SVG, or PDF for papers/presentations
-
-That's it. No terminal nonsense, no weird dependencies. Just download, install, run.
-
----
-
-## Demo
-
-**[GIF: Opening a genome file and circular view appears]**
-
-**[GIF: Running BLAST comparison and watching results appear]**
-
-**[GIF: Switching between circular, linear, and synteny views]**
-
----
+A desktop application for interactive visualization and comparative analysis of genomic sequences. Gyre supports multiple visualization modes (circular, linear, synteny) and integrates BLAST for sequence comparison. All computations run locally without requiring internet connectivity or external dependencies.
 
 ## Installation
 
 ### Windows
 
-1. Download `Gyre Setup 1.0.0.exe` from [Releases](https://github.com/Febo2788/genome-visualizer/releases)
-2. Run the installer and click "Install"
-3. Done — app appears in your Start Menu
+Download the latest installer from [Releases](https://github.com/Febo2788/genome-visualizer/releases):
 
-### Mac
+```
+Gyre Setup 1.0.0.exe
+```
 
-Coming soon.
+The installer includes BLAST+ binaries and requires approximately 500MB of disk space. Windows Defender may flag the executable on first run, which is normal for unsigned applications.
 
----
+### macOS
 
-## What You Can Do
+Support for macOS is under development.
 
-- **Circular view** — See your whole genome at a glance with all annotations
-- **Linear view** — Zoom in on specific regions, scroll around
-- **Synteny view** — Compare two genomes side-by-side with BLAST matches highlighted
-- **Load multiple tracks** — Show genes, repeats, variants, coverage data all at once
-- **Export** — Save diagrams as PNG, SVG, or PDF for your papers/presentations
-- **BLAST comparison** — Compare genomes automatically (everything runs locally on your computer)
+## Getting Started
 
----
+### Basic Workflow
 
-## What Files Do I Need?
+1. Launch Gyre from the Start Menu or desktop shortcut
+2. Click "Open GenBank..." to load a genomic sequence file
+3. Select a visualization mode: Circular, Linear, or Synteny
+4. (Optional) Click "Compare genomes..." to run BLAST analysis
 
-Mostly **GenBank files** (.gb, .gbk). You can download them from [NCBI GenBank](https://www.ncbi.nlm.nih.gov/nucleotide/) — just search your organism, then "Send to" → GenBank format.
+### Loading Genomic Data
 
-You can also load:
-- **BED files** for genes/regions
-- **VCF files** for variants
-- **bedGraph files** for coverage
+Gyre accepts GenBank files (.gb, .gbk) as the primary input format. GenBank files can be downloaded from:
 
----
+- NCBI Nucleotide Database: https://www.ncbi.nlm.nih.gov/nucleotide/
+- Search for organism, select sequence, export as "GenBank" format
+
+### Visualization Modes
+
+**Circular View**: Displays complete genome sequence with concentric rings representing genomic features, annotations, and comparative tracks. Optimal for single-genome overview and publication-quality diagrams.
+
+**Linear View**: Scrollable and zoomable linear representation of genomic sequences. Useful for examining specific genomic regions, examining feature density, and detailed annotation inspection.
+
+**Synteny View**: Side-by-side comparison of two genomic sequences with collinear regions highlighted. Requires prior BLAST comparison analysis.
+
+### BLAST Comparative Genomics
+
+1. Click "Compare genomes..." in the toolbar
+2. Select reference genome (target sequence for comparison)
+3. Select one or more query genomes (sequences to align)
+4. Configure BLAST parameters (identity threshold, alignment length)
+5. Click "Run BLAST" to initiate comparison
+6. Results display upon completion as colored regions in synteny view
+
+Note: Processing time is proportional to genome size. Whole-genome comparisons typically require 10-30 minutes for sequences exceeding 5MB.
+
+## Features
+
+- **Multiple Visualization Modes**: Circular, linear, and synteny views accommodate different analytical requirements
+- **Local BLAST Integration**: Comparative genomics analysis without external services
+- **Genomic Feature Annotation**: Display genes, repeats, regulatory elements, and other annotations
+- **Multi-Track Support**: Simultaneous visualization of coverage data, variants, and custom tracks
+- **Publication Export**: Export diagrams in PNG, SVG, and PDF formats
+- **Offline Operation**: Complete analysis capability without internet connectivity
+- **Cross-Platform Support**: Electron-based application for Windows and macOS
+
+## Supported File Formats
+
+| Format | Extensions | Description |
+|--------|-----------|-------------|
+| GenBank | .gb, .gbk | Standard genomic sequence format with annotations (NCBI) |
+| BED | .bed | Genomic intervals (0-based coordinates, tab-delimited) |
+| bedGraph | .bedgraph | Genomic intervals with associated numeric values |
+| VCF | .vcf | Variant call format for genomic variations |
+
+## Visualization Examples
+
+### Circular Genome View
+
+![Circular View Placeholder](./docs/circular-view-screenshot.png)
+
+**PLACEHOLDER**: Insert screenshot showing circular genome visualization with:
+- Central genome sequence ring
+- Multiple annotation tracks (genes, repeats, variants)
+- Concentric rings showing different data types
+- Color-coded feature categories
+
+### BLAST Comparison Workflow
+
+![BLAST Workflow Placeholder](./docs/blast-workflow.gif)
+
+**PLACEHOLDER**: Insert animated GIF showing:
+1. Selecting reference and query genomes
+2. Running BLAST comparison
+3. Results appearing in synteny view
+4. Interactive highlighting of collinear regions
+5. Zooming into comparison details
+
+Approximate GIF duration: 30-45 seconds
+
+### Linear Genome View
+
+![Linear View Placeholder](./docs/linear-view-screenshot.png)
+
+**PLACEHOLDER**: Insert screenshot showing:
+- Linear genome representation
+- Zoom controls and navigation
+- Feature annotation at specific coordinates
+- Coverage or variant track display
+- Coordinate ruler and position indicators
 
 ## Troubleshooting
 
-### App won't start
+### Application fails to start
 
-Windows Defender might be blocking it. Try uninstalling and reinstalling, or adding it to your antivirus whitelist.
+Windows Defender and other antivirus software may block unsigned executables. Options:
 
-### BLAST is slow
+1. Add executable to antivirus whitelist
+2. Uninstall and reinstall application
+3. Disable SmartScreen on first run (not recommended for general use)
 
-Yeah, that's normal. Large genomes can take 10-30 minutes. Just let it run — you'll see progress in the terminal window.
+### BLAST comparison produces no results
 
-### It says "BLAST not found"
+Verify the following:
 
-Make sure BLAST+ is installed. The installer should handle it, but if something went wrong:
+1. Input genomes are in valid GenBank format
+2. Genomes contain sufficient sequence similarity (test with known similar genomes)
+3. BLAST parameters (identity threshold, alignment length) are appropriate for expected divergence
+4. Check terminal window for error messages
 
-**Windows:** `winget install ncbi-blast`
-**Mac:** `brew install blast`
+### BLAST analysis runs slowly
 
-### Comparison found nothing
+This is expected behavior. Processing time depends on:
 
-Could be that the genomes are too different, or the files are corrupted. Try with two similar genomes first as a test.
+- Genome size (larger genomes require longer analysis)
+- Number of genomes being compared
+- System CPU and available memory
+- BLAST parameter stringency
 
----
+For testing, use small genome regions or smaller genomic sequences.
+
+### "BLAST not found" error
+
+Ensure BLAST+ binaries are properly installed. The application installer includes BLAST+ binaries, but manual installation is available:
+
+**Windows**: `winget install ncbi-blast`
+**macOS**: `brew install blast`
+
+### Export functionality not working
+
+Verify write permissions to the selected export directory. By default, exports are saved to the user's Downloads folder. If that location is restricted, select an alternative directory with write permissions.
 
 ## For Developers
 
-Want to build from source or contribute?
+### Building from Source
+
+Prerequisites: Node.js 16+
 
 ```bash
 npm install
-npm run fetch-vendor
-npm run fetch-blast
-npm run build
-npm run electron          # Test locally
-npm run dist:win          # Build installer
+npm run fetch-vendor      # Download React, Babel, fonts
+npm run fetch-blast       # Download BLAST+ binaries
+npm run build             # Build HTML from JSX
+npm run electron          # Run in development mode
+npm run dist:win          # Build Windows installer
 ```
 
-See `CLAUDE.md` for architecture notes.
+### Project Architecture
 
----
+See `CLAUDE.md` for detailed architecture documentation including:
+- Component structure and data flow
+- Build system design
+- BLAST integration
+- File format parsing
 
-Happy genomics! 🧬
+## Citation
+
+If Gyre is used in published research, please cite:
+
+```
+Gyre Genome Viewer (2025). Available at: https://github.com/Febo2788/genome-visualizer
+```
+
+## License
+
+GNU General Public License v3.0. See LICENSE file for details.
+
+## Issues and Support
+
+Report bugs or request features at: https://github.com/Febo2788/genome-visualizer/issues
