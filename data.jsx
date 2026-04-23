@@ -234,24 +234,24 @@ function generateDemoSyntenyFeatures() {
   const rnd = mulberry32(88);
   const cats = Object.keys(FEATURE_CATEGORIES);
 
-  // Helper to generate features for any genome
-  function generateFeaturesForGenome(length, prefix) {
+  // Helper to generate features for any genome (fewer features = less blob)
+  function generateFeaturesForGenome(genomeLength, prefix) {
     const features = [];
     let pos = 1500;
-    while (pos < length - 2000) {
-      const length = 300 + Math.floor(rnd() * 2200);
+    while (pos < genomeLength - 2000) {
+      const featureLen = 300 + Math.floor(rnd() * 2200);
       const strand = rnd() > 0.48 ? 1 : -1;
       const cat = cats[Math.floor(rnd() * cats.length)];
       features.push({
         id: `${prefix}_f${features.length}`,
         start: pos,
-        end: Math.min(pos + length, length),
+        end: Math.min(pos + featureLen, genomeLength),
         strand,
         category: cat,
         gene: `${prefix}_${Math.floor(pos / 10000)}`,
         product: "",
       });
-      pos += length + Math.floor(rnd() * 1800);
+      pos += featureLen + Math.floor(rnd() * 2500); // increased spacing = fewer features
     }
     return features;
   }

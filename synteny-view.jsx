@@ -410,17 +410,34 @@ function RibbonBand({ pairs, yTop, yBot, genomeLen,
         const midY = (yAttachTop + yAttachBot) / 2;
 
         let d;
-        if (ribbonStyle === 'straight') {
-          // Straight parallelogram: top-left to bottom-left, bottom-left to bottom-right, etc.
-          d = `M ${x0a} ${yAttachTop} L ${x0b} ${yAttachBot} L ${x1b} ${yAttachBot} L ${x1a} ${yAttachTop} Z`;
+        if (p.inverted) {
+          // Inverted: ribbon flips halfway through (visual rotation showing reversal)
+          // Top: x0a to x1a
+          // Bottom: x1b to x0b (reversed order shows the flip)
+          if (ribbonStyle === 'straight') {
+            d = `M ${x0a} ${yAttachTop} L ${x1b} ${yAttachBot} L ${x0b} ${yAttachBot} L ${x1a} ${yAttachTop} Z`;
+          } else {
+            // Curvy with flip: left side goes from x0a→x1b, right side goes from x1a→x0b
+            d = `
+              M ${x0a} ${yAttachTop}
+              C ${x0a} ${midY}, ${x1b} ${midY}, ${x1b} ${yAttachBot}
+              L ${x0b} ${yAttachBot}
+              C ${x0b} ${midY}, ${x1a} ${midY}, ${x1a} ${yAttachTop}
+              Z`;
+          }
         } else {
-          // Curvy (Bezier) — original style
-          d = `
-            M ${x0a} ${yAttachTop}
-            C ${x0a} ${midY}, ${x0b} ${midY}, ${x0b} ${yAttachBot}
-            L ${x1b} ${yAttachBot}
-            C ${x1b} ${midY}, ${x1a} ${midY}, ${x1a} ${yAttachTop}
-            Z`;
+          // Forward orientation: normal trapezoid/curve
+          if (ribbonStyle === 'straight') {
+            d = `M ${x0a} ${yAttachTop} L ${x0b} ${yAttachBot} L ${x1b} ${yAttachBot} L ${x1a} ${yAttachTop} Z`;
+          } else {
+            // Curvy (Bezier) — original style
+            d = `
+              M ${x0a} ${yAttachTop}
+              C ${x0a} ${midY}, ${x0b} ${midY}, ${x0b} ${yAttachBot}
+              L ${x1b} ${yAttachBot}
+              C ${x1b} ${midY}, ${x1a} ${midY}, ${x1a} ${yAttachTop}
+              Z`;
+          }
         }
         return <path key={i} d={d} fill={color}
                      opacity={Math.max(opacityMin, Math.min(opacityMax, op))} />;
