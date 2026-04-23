@@ -76,37 +76,27 @@ Note: Processing time is proportional to genome size. Whole-genome comparisons t
 
 ### Circular Genome View
 
-![Circular View Placeholder](./docs/circular-view-screenshot.png)
+![Circular Genome View](./docs/circular-view.png)
 
-**PLACEHOLDER**: Insert screenshot showing circular genome visualization with:
-- Central genome sequence ring
-- Multiple annotation tracks (genes, repeats, variants)
-- Concentric rings showing different data types
-- Color-coded feature categories
+Circular visualization displays the complete genomic sequence with concentric rings representing different annotation types and comparative tracks. Multiple features including genes, repeats, and variants are color-coded for easy identification.
 
-### BLAST Comparison Workflow
+### BLAST Comparison Results
 
-![BLAST Workflow Placeholder](./docs/blast-workflow.gif)
+![BLAST Workflow Animation](./docs/blast-workflow.gif)
 
-**PLACEHOLDER**: Insert animated GIF showing:
-1. Selecting reference and query genomes
-2. Running BLAST comparison
-3. Results appearing in synteny view
-4. Interactive highlighting of collinear regions
-5. Zooming into comparison details
+Animated demonstration of BLAST comparative genomics workflow showing genome selection, comparison execution, and resulting synteny visualization with collinear regions highlighted.
 
-Approximate GIF duration: 30-45 seconds
+### Circular View Animation
 
-### Linear Genome View
+![Circular View with Rings Animation](./docs/circular-animation.gif)
 
-![Linear View Placeholder](./docs/linear-view-screenshot.png)
+Interactive circular view showing multiple annotation tracks and comparison rings. Demonstrates how comparative genomics data displays as concentric rings around the central genome sequence.
 
-**PLACEHOLDER**: Insert screenshot showing:
-- Linear genome representation
-- Zoom controls and navigation
-- Feature annotation at specific coordinates
-- Coverage or variant track display
-- Coordinate ruler and position indicators
+### Synteny Comparison View
+
+![Synteny Comparison](./docs/synteny-view.png)
+
+Synteny view showing pairwise genome comparison with collinear regions displayed as connecting ribbons between two genomic sequences. Forward matches displayed in blue, inverted matches in red.
 
 ## Troubleshooting
 
