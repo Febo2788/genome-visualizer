@@ -56,9 +56,10 @@ function getBlastDir() {
     platform = 'linux';
   }
 
-  // In production, use resourcesPath; in dev, use __dirname
-  const resourcesPath = process.resourcesPath || path.join(__dirname);
-  return path.join(resourcesPath, 'blast-bin', platform);
+  // Always use __dirname in dev mode, use resourcesPath in packaged app
+  const isPackaged = app.isPackaged || process.env.NODE_ENV === 'production';
+  const basePath = isPackaged ? path.join(process.resourcesPath) : __dirname;
+  return path.join(basePath, 'blast-bin', platform);
 }
 
 // Extract BLAST sequence from GenBank file (from server.js)

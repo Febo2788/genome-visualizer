@@ -12,6 +12,7 @@ const jsxFiles = [
   'genbank-parser.jsx',
   'track-importers.jsx',
   'vcf-parser.jsx',
+  'auto-fit-utils.jsx',
   'export-all.jsx',
   'app.jsx',
 ];

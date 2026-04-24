@@ -1769,13 +1769,15 @@ function LinearGenome({
         // Create items sorted by position
         const items = visibleLabels.map((lbl) => {
           const origX = bpToX(lbl.position); // original feature position (stays fixed)
+          // Use label's explicit color, or look up category color, or default to black
+          const labelColor = lbl.color || (lbl.category && colorMap[lbl.category]) || '#1A1A1A';
           return {
             name: lbl.name,
             position: lbl.position,
             origX: origX,
             x: origX, // x position (can shift left/right for spacing)
             y: 0, // y will be set by row assignment
-            color: lbl.color || '#1A1A1A',
+            color: labelColor,
             bold: lbl.bold,
             italic: lbl.italic,
           };
@@ -2954,6 +2956,8 @@ function PropertiesPanel({
   labels, onAddLabel, onRemoveLabel, onClearLabels, availableLabels = [],
   viewMode,
   onExport,
+  onPreview,
+  isExportLoading = false,
   resolution, onResolution,
   genomeLen = 4411532,
   paletteTick = 0,
@@ -3020,7 +3024,7 @@ function PropertiesPanel({
           onRemoveSyntenyHighlight={onRemoveSyntenyHighlight}
           genomeLen={genomeLen}
         />}
-        {tab === 'Export' && <ExportPanel onExport={onExport} resolution={resolution} onResolution={onResolution} viewMode={viewMode} />}
+        {tab === 'Export' && <ExportPanel onExport={onExport} onPreview={onPreview} isExportLoading={isExportLoading} resolution={resolution} onResolution={onResolution} viewMode={viewMode} />}
       </div>
     </div>
   );
@@ -4127,7 +4131,7 @@ function HighlightsEditor({ highlights, onAddHighlight, onRemoveHighlight, genom
 // ============================================================
 // Export panel
 // ============================================================
-function ExportPanel({ onExport, resolution, onResolution, viewMode }) {
+function ExportPanel({ onExport, onPreview, isExportLoading, resolution, onResolution, viewMode }) {
   const [format, setFormat] = React.useState('SVG');
   const [figureTarget, setFigureTarget] = React.useState('all3'); // 'current' | 'circular' | 'linear' | 'synteny' | 'all3'
   const [includes, setIncludes] = React.useState({
@@ -4135,7 +4139,9 @@ function ExportPanel({ onExport, resolution, onResolution, viewMode }) {
   });
 
   const run = () => {
-    if (typeof onExport === 'function') {
+    if (typeof onPreview === 'function') {
+      onPreview({ format, figureTarget, resolution, includes });
+    } else if (typeof onExport === 'function') {
       onExport({ format, figureTarget, resolution, includes });
     }
   };
@@ -4201,8 +4207,9 @@ function ExportPanel({ onExport, resolution, onResolution, viewMode }) {
         ))}
       </FieldGroup>
 
-      <button style={{ ...primaryBtn, width: '100%', padding: '12px' }} onClick={run}>
-        Render figure · {format}
+      <button style={{ ...primaryBtn, width: '100%', padding: '12px', opacity: isExportLoading ? 0.6 : 1 }}
+              onClick={run} disabled={isExportLoading}>
+        {isExportLoading ? 'Preparing preview…' : `Preview · ${format}`}
       </button>
       <div style={{ fontSize: 10.5, fontFamily: FONT_MONO, color: UI.muted, textAlign: 'center', marginTop: 8 }}>
         {figureTarget === 'current' ? (viewMode + ' (current)') :
@@ -4599,7 +4606,11 @@ function parseGenBank(text) {
       if (current.type === 'CDS') {
         const labelName = current.gene || current.product;
         if (labelName) {
-          gLabels.push({ position: Math.floor((current.start + current.end) / 2), name: labelName });
+          gLabels.push({
+            position: Math.floor((current.start + current.end) / 2),
+            name: labelName,
+            category: current.category
+          });
         }
       }
     }
@@ -5401,6 +5412,81 @@ Object.assign(window, {
 
 
 // ============================================================
+// auto-fit-utils.jsx
+// ============================================================
+
+// Auto-fit calculation utilities for exports and previews
+// These determine the zoom/view level to fit all content in one frame
+
+/**
+ * Calculate zoom level for circular view to fit all tracks
+ * @param {Array} tracks - Array of track objects with radius and thickness
+ * @returns {number} Zoom level (1 = normal, <1 = zoomed out)
+ */
+function calculateAutoFitZoomCircular(tracks) {
+  if (!tracks || tracks.length === 0) return 1;
+
+  // Find the maximum radius needed
+  const maxRadius = Math.max(
+    ...tracks.map(t => (t.radius || 0) + (t.thickness || 0.01) / 2)
+  );
+
+  // ViewBox is "-0.18 -0.18 1.36 1.36", so max safe radius is ~0.68 from center
+  // With 0.05 padding buffer, we need content to fit within 0.63
+  const maxSafeRadius = 0.63;
+
+  // If max radius fits in safe area, use zoom 1
+  // Otherwise, zoom out proportionally
+  if (maxRadius <= maxSafeRadius) {
+    return 1;
+  }
+
+  // Zoom out to fit: zoom = maxSafeRadius / maxRadius
+  const autoZoom = maxSafeRadius / maxRadius;
+  return Math.max(0.3, autoZoom); // Min zoom 0.3 to avoid shrinking too much
+}
+
+/**
+ * Calculate view window for linear view to show entire genome
+ * @param {number} genomeLen - Total genome length
+ * @returns {Object} {viewStart, viewEnd}
+ */
+function calculateAutoFitViewLinear(genomeLen) {
+  return {
+    viewStart: 0,
+    viewEnd: genomeLen || 1,
+  };
+}
+
+/**
+ * Get auto-fit parameters for current view mode
+ * @param {string} viewMode - 'circular', 'linear', or 'synteny'
+ * @param {Array} tracks - Tracks array (for circular)
+ * @param {number} genomeLen - Genome length (for linear/synteny)
+ * @returns {Object} {zoom, panX, panY, viewStart, viewEnd}
+ */
+function getAutoFitParams(viewMode, tracks, genomeLen) {
+  const params = { zoom: 1, panX: 0, panY: 0 };
+
+  if (viewMode === 'circular') {
+    params.zoom = calculateAutoFitZoomCircular(tracks);
+  } else if (viewMode === 'linear') {
+    const view = calculateAutoFitViewLinear(genomeLen);
+    params.viewStart = view.viewStart;
+    params.viewEnd = view.viewEnd;
+  } else if (viewMode === 'synteny') {
+    const view = calculateAutoFitViewLinear(genomeLen);
+    params.viewStart = view.viewStart;
+    params.viewEnd = view.viewEnd;
+  }
+
+  return params;
+}
+
+Object.assign(window, { calculateAutoFitZoomCircular, calculateAutoFitViewLinear, getAutoFitParams });
+
+
+// ============================================================
 // export-all.jsx
 // ============================================================
 
@@ -5414,10 +5500,10 @@ Object.assign(window, {
 //   (4) also snapshot the legend strip as a small embedded SVG,
 //   (5) compose pages into a master SVG, and convert to the requested format.
 
-function exportAllViews(opts) {
-  const { format = 'SVG', figureTarget = 'all3', resolution = 300, includes = {} } = opts || {};
+async function captureExportSVGs(opts) {
+  const { format = 'SVG', figureTarget = 'all3', resolution = 300, includes = {}, tracks = [], genomeLen = 0 } = opts || {};
   const mountPoint = document.getElementById('root');
-  if (!mountPoint) return;
+  if (!mountPoint) throw new Error('No root element found');
 
   const origMode = localStorage.getItem('gyre-view') || 'circular';
   const wantedModes =
@@ -5427,50 +5513,56 @@ function exportAllViews(opts) {
     figureTarget === 'synteny'  ? ['synteny']  :
     ['circular', 'linear', 'synteny'];
 
-  (async () => {
-    const snapshots = {};
-    for (const mode of wantedModes) {
-      localStorage.setItem('gyre-view', mode);
-      window.dispatchEvent(new CustomEvent('gyre-set-view', { detail: mode }));
-      // Wait generously for React commit + layout + any font-metric settling.
-      await waitForIdle(650);
+  const snapshots = {};
+  for (const mode of wantedModes) {
+    localStorage.setItem('gyre-view', mode);
+    window.dispatchEvent(new CustomEvent('gyre-set-view', { detail: mode }));
 
-      const viewArea = document.querySelector('[data-gyre-viewarea]') || mountPoint;
-      const svgs = Array.from(viewArea.querySelectorAll('svg'));
-      if (svgs.length === 0) continue;
-      snapshots[mode] = svgs.map(s => serializeSvg(s));
-    }
+    // Wait generously for React commit + layout + any font-metric settling.
+    await waitForIdle(650);
 
-    // Legend snapshot (shared across all pages if includes.Legend is on)
-    let legendSnap = null;
-    if (includes.Legend !== false) {
-      legendSnap = snapshotLegend();
-    }
+    const viewArea = document.querySelector('[data-gyre-viewarea]') || mountPoint;
+    const svgs = Array.from(viewArea.querySelectorAll('svg'));
+    if (svgs.length === 0) continue;
+    snapshots[mode] = svgs.map(s => serializeSvg(s));
+  }
 
-    // Restore user's view
-    localStorage.setItem('gyre-view', origMode);
-    window.dispatchEvent(new CustomEvent('gyre-set-view', { detail: origMode }));
+  // Legend snapshot (shared across all pages if includes.Legend is on)
+  let legendSnap = null;
+  if (includes.Legend !== false) {
+    legendSnap = snapshotLegend();
+  }
 
-    // Compose master SVG
-    const master = composeMasterSvg(snapshots, wantedModes, {
-      legend: legendSnap,
-      title: includes['Title block'] !== false,
-      scale: includes['Scale bar'] !== false,
-    });
+  // Restore user's view
+  localStorage.setItem('gyre-view', origMode);
+  window.dispatchEvent(new CustomEvent('gyre-set-view', { detail: origMode }));
 
-    const filename = `gyre-${figureTarget === 'all3' ? 'all-views' : figureTarget}`;
+  // Compose master SVG
+  const masterSvg = composeMasterSvg(snapshots, wantedModes, {
+    legend: legendSnap,
+    title: includes['Title block'] !== false,
+    scale: includes['Scale bar'] !== false,
+  });
 
+  const filename = `gyre-${figureTarget === 'all3' ? 'all-views' : figureTarget}`;
+  return { masterSvg, filename };
+}
+
+function exportAllViews(opts) {
+  const { format = 'SVG', resolution = 300 } = opts || {};
+
+  captureExportSVGs(opts).then(async ({ masterSvg, filename }) => {
     if (format === 'SVG') {
-      downloadBlob(new Blob([master], { type: 'image/svg+xml' }), filename + '.svg');
+      downloadBlob(new Blob([masterSvg], { type: 'image/svg+xml' }), filename + '.svg');
     } else if (format === 'PNG' || format === 'TIFF') {
-      const png = await svgToPng(master, resolution);
+      const png = await svgToPng(masterSvg, resolution);
       downloadBlob(png, filename + (format === 'TIFF' ? '.tiff' : '.png'));
     } else if (format === 'PDF') {
-      const png = await svgToPng(master, resolution);
+      const png = await svgToPng(masterSvg, resolution);
       const pdfBlob = await pngToPdf(png);
       downloadBlob(pdfBlob, filename + '.pdf');
     }
-  })().catch(err => {
+  }).catch(err => {
     console.error('Export failed:', err);
     alert('Export failed: ' + err.message);
   });
@@ -5865,7 +5957,7 @@ function downloadBlob(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
-Object.assign(window, { exportAllViews });
+Object.assign(window, { exportAllViews, captureExportSVGs });
 
 
 // ============================================================
@@ -5875,7 +5967,7 @@ Object.assign(window, { exportAllViews });
 // Main app shell — toolbar, view area, legend, tooltip
 // Orchestrates circular/linear/synteny views
 
-function Toolbar({ viewMode, onViewMode, onOpenFile, onExport, onTogglePreview, exportPreviewOn, genomeName, zoom, onZoom, viewStart, viewEnd, genomeLen, onViewWindow, onEraseOptionalTracks, onShowBlastSetup, onShowColorSettings }) {
+function Toolbar({ viewMode, onViewMode, onOpenFile, onExport, genomeName, zoom, onZoom, viewStart, viewEnd, genomeLen, onViewWindow, onEraseOptionalTracks, onShowBlastSetup, onShowColorSettings }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 0,
@@ -5975,15 +6067,7 @@ function Toolbar({ viewMode, onViewMode, onOpenFile, onExport, onTogglePreview, 
 
       <div style={{ width: 1, height: 24, background: UI.border, margin: '0 14px' }} />
 
-      <button onClick={onTogglePreview} style={{
-        ...ghostBtn, padding: '6px 12px', fontSize: 12,
-        background: exportPreviewOn ? UI.ink : 'transparent',
-        color: exportPreviewOn ? UI.bg : UI.ink,
-      }} title="Show view at export dimensions">
-        {exportPreviewOn ? '◼ Preview ON' : '◻ PNG preview'}
-      </button>
-
-      <button onClick={onExport} style={{ ...ghostBtn, padding: '6px 12px', fontSize: 12, marginLeft: 8 }}>
+      <button onClick={onExport} style={{ ...ghostBtn, padding: '6px 12px', fontSize: 12 }}>
         Export…
       </button>
     </div>
@@ -6534,6 +6618,47 @@ npm start`}
 }
 
 // ============================================================
+// Export Preview Modal
+// ============================================================
+function ExportPreviewModal({ open, onClose, svgDataUrl, opts, onExport }) {
+  if (!open) return null;
+  return (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      background: 'rgba(0,0,0,0.6)', display: 'flex',
+      alignItems: 'center', justifyContent: 'center', zIndex: 10000,
+    }}>
+      <div style={{
+        background: UI.bg, borderRadius: 8, padding: 24,
+        width: 'min(960px, 92vw)', maxHeight: '90vh', display: 'flex',
+        flexDirection: 'column', overflow: 'hidden',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.35)',
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexShrink: 0 }}>
+          <div style={{ fontSize: 16, fontWeight: 600, fontFamily: FONT_SANS }}>Export preview</div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: UI.muted, lineHeight: 1 }}>✕</button>
+        </div>
+        <div style={{ flex: 1, overflow: 'auto', marginBottom: 16, minHeight: 0 }}>
+          <img src={svgDataUrl} style={{ width: '100%', border: `1px solid ${UI.border}`, borderRadius: 4, display: 'block' }} alt="Export preview" />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <div style={{ fontSize: 11, fontFamily: FONT_MONO, color: UI.muted }}>
+            {opts && (opts.figureTarget === 'all3' ? 'all 3 views' : opts.figureTarget)}
+            {opts && ` · ${opts.format} · ${opts.resolution} DPI`}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={onClose} style={ghostBtn}>Close</button>
+            <button onClick={() => { onClose(); onExport(opts); }} style={primaryBtn}>
+              Export · {opts && opts.format}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
 // Main app
 // ============================================================
 function App() {
@@ -6611,7 +6736,6 @@ function App() {
   const [circularView, setCircularView] = React.useReducer(viewReducer, defaultView);
   const [syntenyView, setSyntenyView] = React.useReducer(viewReducer, defaultView);
   const [linearView, setLinearView] = React.useReducer(viewReducer, defaultView);
-  const [exportPreview, setExportPreview] = React.useState(false);
   const [paletteTick, setPaletteTick] = React.useState(0);
   const bumpPalette = React.useCallback(() => setPaletteTick(t => t + 1), []);
 
@@ -6678,6 +6802,10 @@ function App() {
   });
   const [showBlastModal, setShowBlastModal] = React.useState(false);
   const [blastStatus, setBlastStatus] = React.useState(''); // status message
+  const [exportPreviewOpen, setExportPreviewOpen] = React.useState(false);
+  const [exportPreviewSvg, setExportPreviewSvg] = React.useState(null);
+  const [exportPreviewOpts, setExportPreviewOpts] = React.useState(null);
+  const [exportPreviewLoading, setExportPreviewLoading] = React.useState(false);
 
   // Listen for data reload events to update both tracks and synteny view
   React.useEffect(() => {
@@ -6768,6 +6896,8 @@ function App() {
     window.GC_CONTENT = [];
     window.GC_SKEW = [];
     window.COVERAGE = [];
+    // Clear GenBank labels so they don't persist
+    window.GENBANK_LABELS = [];
     // Clear synteny genomes and links completely (no reference in synteny view)
     window.COMPARISON_GENOMES = [];
     window.MULTI_SYNTENY = [];
@@ -6812,6 +6942,25 @@ function App() {
     setTracks(ts => [...ts, newTrack]);
   };
 
+  const handlePreview = (opts) => {
+    setExportPreviewLoading(true);
+    captureExportSVGs({
+      ...opts, tracks, genomeLen,
+      circular: { tracks, labels, highlights },
+      linear: { viewStart, viewEnd },
+      synteny: { config: syntenyConfig, genomes: mergedGenomes,
+                 labels: syntenyLabels, highlights: syntenyHighlights },
+    }).then(function(result) {
+      setExportPreviewSvg('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(result.masterSvg));
+      setExportPreviewOpts(opts);
+      setExportPreviewOpen(true);
+    }).catch(function(err) {
+      alert('Preview failed: ' + err.message);
+    }).finally(function() {
+      setExportPreviewLoading(false);
+    });
+  };
+
   return (
     <div style={{
       display: 'flex', flexDirection: 'column',
@@ -6823,8 +6972,6 @@ function App() {
         onViewMode={setViewMode}
         onOpenFile={() => openGenBank(setLabels, setTracks, setAvailableLabels)}
         onExport={() => setTab('Export')}
-        onTogglePreview={() => setExportPreview(v => !v)}
-        exportPreviewOn={exportPreview}
         genomeName={GENOME_NAME}
         viewStart={viewStart} viewEnd={viewEnd}
         genomeLen={genomeLen}
@@ -6841,6 +6988,20 @@ function App() {
         onAddBlastTrack={onAddBlastTrack}
         status={blastStatus}
         genomeLen={genomeLen}
+      />
+
+      <ExportPreviewModal
+        open={exportPreviewOpen}
+        onClose={() => setExportPreviewOpen(false)}
+        svgDataUrl={exportPreviewSvg}
+        opts={exportPreviewOpts}
+        onExport={(opts) => exportAllViews({
+          ...opts, tracks, genomeLen,
+          circular: { tracks, labels, highlights },
+          linear: { viewStart, viewEnd },
+          synteny: { config: syntenyConfig, genomes: mergedGenomes,
+                     labels: syntenyLabels, highlights: syntenyHighlights },
+        })}
       />
 
       {showColorSettings && (
@@ -6921,7 +7082,6 @@ function App() {
           >
             <ViewArea
               viewMode={viewMode}
-              exportPreview={exportPreview}
               tracks={tracks}
               features={FEATURES}
               gcContent={window.GC_CONTENT || GC_CONTENT} gcSkew={window.GC_SKEW || GC_SKEW} coverage={window.COVERAGE || COVERAGE}
@@ -6981,11 +7141,15 @@ function App() {
           viewMode={viewMode}
           onExport={(opts) => exportAllViews({
             ...opts,
+            tracks,
+            genomeLen,
             circular: { tracks, labels, highlights },
             linear: { viewStart, viewEnd },
             synteny: { config: syntenyConfig, genomes: mergedGenomes,
                        labels: syntenyLabels, highlights: syntenyHighlights },
           })}
+          onPreview={handlePreview}
+          isExportLoading={exportPreviewLoading}
           resolution={resolution} onResolution={setResolution}
           // Synteny editing props
           syntenyConfig={syntenyConfig} onSyntenyConfigChange={(patch) =>
@@ -7011,46 +7175,14 @@ function App() {
   );
 }
 
-function ViewArea({ viewMode, exportPreview, tracks, features, gcContent, gcSkew, coverage, labels,
+function ViewArea({ viewMode, tracks, features, gcContent, gcSkew, coverage, labels,
                    viewStart, viewEnd, hoveredId, setHoveredId, setSelectedFeature, highlights,
                    circularView, setCircularView, paletteTick,
                    syntenyView, setSyntenyView, syntenyConfig, syntenyLabels, syntenyHighlights,
                    linearView, setLinearView,
                    mergedGenomes, genomeLen = GENOME_LENGTH,
                    filterStart, filterEnd, onSetFilter }) {
-  // Export preview target dimensions — 1920x1080 content area, scaled to fit
-  const previewStyle = exportPreview ? {
-    width: '100%', height: '100%',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    background: '#E5DFCF', padding: 20, boxSizing: 'border-box',
-  } : null;
-  const previewInner = exportPreview ? {
-    width: 1920, height: viewMode === 'synteny' ? 900 : 1080,
-    background: UI.bg, border: `1px solid ${UI.divider}`,
-    transform: 'scale(0.45)', transformOrigin: 'center',
-    flexShrink: 0,
-    position: 'relative',
-  } : null;
   if (viewMode === 'circular') {
-    if (exportPreview) {
-      return (
-        <div style={previewStyle}>
-          <div style={{ ...previewInner, width: 1080, height: 1080 }}>
-            <CircularGenome
-              tracks={tracks} features={features}
-              gcContent={gcContent} gcSkew={gcSkew} coverage={coverage}
-              labels={labels} paletteTick={paletteTick}
-              genomeLen={genomeLen} genomeName={GENOME_NAME} accession={GENOME_ACCESSION}
-              hoveredId={hoveredId} setHoveredId={setHoveredId}
-              setSelectedFeature={setSelectedFeature}
-              highlights={highlights}
-              zoom={1} panX={0} panY={0}
-              onViewChange={() => {}}
-            />
-          </div>
-        </div>
-      );
-    }
     return (
       <div style={{ width: '100%', height: '100%', padding: 0, boxSizing: 'border-box', position: 'relative' }}>
         <div style={{ width: '100%', height: '100%', position: 'relative' }}>
@@ -7075,23 +7207,6 @@ function ViewArea({ viewMode, exportPreview, tracks, features, gcContent, gcSkew
     );
   }
   if (viewMode === 'linear') {
-    if (exportPreview) {
-      return (
-        <div style={previewStyle}>
-          <div style={previewInner}>
-            <LinearGenome
-              features={features} gcContent={gcContent} gcSkew={gcSkew} coverage={coverage}
-              labels={labels} genomeLen={genomeLen}
-              genomeName={GENOME_NAME} accession={GENOME_ACCESSION}
-              viewStart={viewStart} viewEnd={viewEnd}
-              hoveredId={hoveredId} setHoveredId={setHoveredId}
-              setSelectedFeature={setSelectedFeature}
-              filterStart={filterStart} filterEnd={filterEnd} onSetFilter={onSetFilter}
-            />
-          </div>
-        </div>
-      );
-    }
     return (
       <div style={{ width: '100%', height: '100%', padding: 0, boxSizing: 'border-box' }}>
         <div style={{ width: '100%', height: '100%', position: 'relative' }}>
@@ -7112,25 +7227,6 @@ function ViewArea({ viewMode, exportPreview, tracks, features, gcContent, gcSkew
     );
   }
   // synteny
-  if (exportPreview) {
-    return (
-      <div style={previewStyle}>
-        <div style={previewInner}>
-          <SyntenyView
-            genomeLen={genomeLen} features={features} labels={labels}
-            genomes={mergedGenomes} synteny={window.MULTI_SYNTENY || MULTI_SYNTENY}
-            hoveredId={hoveredId} setHoveredId={setHoveredId}
-            setSelectedFeature={setSelectedFeature}
-            config={syntenyConfig}
-            syntenyLabels={syntenyLabels} syntenyHighlights={syntenyHighlights}
-            view={{ zoom: 1, panX: 0, panY: 0 }}
-            onViewChange={() => {}}
-            paletteTick={paletteTick}
-          />
-        </div>
-      </div>
-    );
-  }
   return (
     <div style={{ width: '100%', height: '100%' }}>
       {console.log('SyntenyView:', { genomeCount: mergedGenomes?.length, syntenyCount: (window.MULTI_SYNTENY || MULTI_SYNTENY)?.length })}

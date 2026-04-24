@@ -8,10 +8,10 @@
 //   (4) also snapshot the legend strip as a small embedded SVG,
 //   (5) compose pages into a master SVG, and convert to the requested format.
 
-function exportAllViews(opts) {
-  const { format = 'SVG', figureTarget = 'all3', resolution = 300, includes = {} } = opts || {};
+async function captureExportSVGs(opts) {
+  const { format = 'SVG', figureTarget = 'all3', resolution = 300, includes = {}, tracks = [], genomeLen = 0 } = opts || {};
   const mountPoint = document.getElementById('root');
-  if (!mountPoint) return;
+  if (!mountPoint) throw new Error('No root element found');
 
   const origMode = localStorage.getItem('gyre-view') || 'circular';
   const wantedModes =
@@ -21,50 +21,56 @@ function exportAllViews(opts) {
     figureTarget === 'synteny'  ? ['synteny']  :
     ['circular', 'linear', 'synteny'];
 
-  (async () => {
-    const snapshots = {};
-    for (const mode of wantedModes) {
-      localStorage.setItem('gyre-view', mode);
-      window.dispatchEvent(new CustomEvent('gyre-set-view', { detail: mode }));
-      // Wait generously for React commit + layout + any font-metric settling.
-      await waitForIdle(650);
+  const snapshots = {};
+  for (const mode of wantedModes) {
+    localStorage.setItem('gyre-view', mode);
+    window.dispatchEvent(new CustomEvent('gyre-set-view', { detail: mode }));
 
-      const viewArea = document.querySelector('[data-gyre-viewarea]') || mountPoint;
-      const svgs = Array.from(viewArea.querySelectorAll('svg'));
-      if (svgs.length === 0) continue;
-      snapshots[mode] = svgs.map(s => serializeSvg(s));
-    }
+    // Wait generously for React commit + layout + any font-metric settling.
+    await waitForIdle(650);
 
-    // Legend snapshot (shared across all pages if includes.Legend is on)
-    let legendSnap = null;
-    if (includes.Legend !== false) {
-      legendSnap = snapshotLegend();
-    }
+    const viewArea = document.querySelector('[data-gyre-viewarea]') || mountPoint;
+    const svgs = Array.from(viewArea.querySelectorAll('svg'));
+    if (svgs.length === 0) continue;
+    snapshots[mode] = svgs.map(s => serializeSvg(s));
+  }
 
-    // Restore user's view
-    localStorage.setItem('gyre-view', origMode);
-    window.dispatchEvent(new CustomEvent('gyre-set-view', { detail: origMode }));
+  // Legend snapshot (shared across all pages if includes.Legend is on)
+  let legendSnap = null;
+  if (includes.Legend !== false) {
+    legendSnap = snapshotLegend();
+  }
 
-    // Compose master SVG
-    const master = composeMasterSvg(snapshots, wantedModes, {
-      legend: legendSnap,
-      title: includes['Title block'] !== false,
-      scale: includes['Scale bar'] !== false,
-    });
+  // Restore user's view
+  localStorage.setItem('gyre-view', origMode);
+  window.dispatchEvent(new CustomEvent('gyre-set-view', { detail: origMode }));
 
-    const filename = `gyre-${figureTarget === 'all3' ? 'all-views' : figureTarget}`;
+  // Compose master SVG
+  const masterSvg = composeMasterSvg(snapshots, wantedModes, {
+    legend: legendSnap,
+    title: includes['Title block'] !== false,
+    scale: includes['Scale bar'] !== false,
+  });
 
+  const filename = `gyre-${figureTarget === 'all3' ? 'all-views' : figureTarget}`;
+  return { masterSvg, filename };
+}
+
+function exportAllViews(opts) {
+  const { format = 'SVG', resolution = 300 } = opts || {};
+
+  captureExportSVGs(opts).then(async ({ masterSvg, filename }) => {
     if (format === 'SVG') {
-      downloadBlob(new Blob([master], { type: 'image/svg+xml' }), filename + '.svg');
+      downloadBlob(new Blob([masterSvg], { type: 'image/svg+xml' }), filename + '.svg');
     } else if (format === 'PNG' || format === 'TIFF') {
-      const png = await svgToPng(master, resolution);
+      const png = await svgToPng(masterSvg, resolution);
       downloadBlob(png, filename + (format === 'TIFF' ? '.tiff' : '.png'));
     } else if (format === 'PDF') {
-      const png = await svgToPng(master, resolution);
+      const png = await svgToPng(masterSvg, resolution);
       const pdfBlob = await pngToPdf(png);
       downloadBlob(pdfBlob, filename + '.pdf');
     }
-  })().catch(err => {
+  }).catch(err => {
     console.error('Export failed:', err);
     alert('Export failed: ' + err.message);
   });
@@ -459,4 +465,4 @@ function downloadBlob(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
-Object.assign(window, { exportAllViews });
+Object.assign(window, { exportAllViews, captureExportSVGs });

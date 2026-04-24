@@ -1,6 +1,6 @@
 {
   "name": "gyre-genome-viewer",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "Gyre Genome Viewer",
   "main": "main.js",
   "scripts": {

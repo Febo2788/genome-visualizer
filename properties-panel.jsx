@@ -9,6 +9,8 @@ function PropertiesPanel({
   labels, onAddLabel, onRemoveLabel, onClearLabels, availableLabels = [],
   viewMode,
   onExport,
+  onPreview,
+  isExportLoading = false,
   resolution, onResolution,
   genomeLen = 4411532,
   paletteTick = 0,
@@ -75,7 +77,7 @@ function PropertiesPanel({
           onRemoveSyntenyHighlight={onRemoveSyntenyHighlight}
           genomeLen={genomeLen}
         />}
-        {tab === 'Export' && <ExportPanel onExport={onExport} resolution={resolution} onResolution={onResolution} viewMode={viewMode} />}
+        {tab === 'Export' && <ExportPanel onExport={onExport} onPreview={onPreview} isExportLoading={isExportLoading} resolution={resolution} onResolution={onResolution} viewMode={viewMode} />}
       </div>
     </div>
   );
@@ -1182,7 +1184,7 @@ function HighlightsEditor({ highlights, onAddHighlight, onRemoveHighlight, genom
 // ============================================================
 // Export panel
 // ============================================================
-function ExportPanel({ onExport, resolution, onResolution, viewMode }) {
+function ExportPanel({ onExport, onPreview, isExportLoading, resolution, onResolution, viewMode }) {
   const [format, setFormat] = React.useState('SVG');
   const [figureTarget, setFigureTarget] = React.useState('all3'); // 'current' | 'circular' | 'linear' | 'synteny' | 'all3'
   const [includes, setIncludes] = React.useState({
@@ -1190,7 +1192,9 @@ function ExportPanel({ onExport, resolution, onResolution, viewMode }) {
   });
 
   const run = () => {
-    if (typeof onExport === 'function') {
+    if (typeof onPreview === 'function') {
+      onPreview({ format, figureTarget, resolution, includes });
+    } else if (typeof onExport === 'function') {
       onExport({ format, figureTarget, resolution, includes });
     }
   };
@@ -1256,8 +1260,9 @@ function ExportPanel({ onExport, resolution, onResolution, viewMode }) {
         ))}
       </FieldGroup>
 
-      <button style={{ ...primaryBtn, width: '100%', padding: '12px' }} onClick={run}>
-        Render figure · {format}
+      <button style={{ ...primaryBtn, width: '100%', padding: '12px', opacity: isExportLoading ? 0.6 : 1 }}
+              onClick={run} disabled={isExportLoading}>
+        {isExportLoading ? 'Preparing preview…' : `Preview · ${format}`}
       </button>
       <div style={{ fontSize: 10.5, fontFamily: FONT_MONO, color: UI.muted, textAlign: 'center', marginTop: 8 }}>
         {figureTarget === 'current' ? (viewMode + ' (current)') :
