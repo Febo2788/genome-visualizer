@@ -335,13 +335,15 @@ function LinearGenome({
         // Create items sorted by position
         const items = visibleLabels.map((lbl) => {
           const origX = bpToX(lbl.position); // original feature position (stays fixed)
+          // Use label's explicit color, or look up category color, or default to black
+          const labelColor = lbl.color || (lbl.category && colorMap[lbl.category]) || '#1A1A1A';
           return {
             name: lbl.name,
             position: lbl.position,
             origX: origX,
             x: origX, // x position (can shift left/right for spacing)
             y: 0, // y will be set by row assignment
-            color: lbl.color || '#1A1A1A',
+            color: labelColor,
             bold: lbl.bold,
             italic: lbl.italic,
           };

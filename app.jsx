@@ -894,6 +894,8 @@ function App() {
     window.GC_CONTENT = [];
     window.GC_SKEW = [];
     window.COVERAGE = [];
+    // Clear GenBank labels so they don't persist
+    window.GENBANK_LABELS = [];
     // Clear synteny genomes and links completely (no reference in synteny view)
     window.COMPARISON_GENOMES = [];
     window.MULTI_SYNTENY = [];

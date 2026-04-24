@@ -3637,7 +3637,7 @@ const SCIENTIFIC_SWATCHES = [
 
 function ColorSwatchPicker({ value, onChange }) {
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
       {SCIENTIFIC_SWATCHES.map(c => (
         <button key={c} onClick={() => onChange(c)}
           style={{
@@ -3647,6 +3647,10 @@ function ColorSwatchPicker({ value, onChange }) {
             boxShadow: value === c ? `0 0 0 1px ${UI.bg} inset` : 'none',
           }} />
       ))}
+      <input type="color" value={value} onChange={(e) => onChange(e.target.value)}
+        style={{ width: 28, height: 28, border: 'none', borderRadius: 3, cursor: 'pointer', padding: 2 }}
+        title="Pick any custom color"
+      />
     </div>
   );
 }

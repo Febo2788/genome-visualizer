@@ -34,7 +34,11 @@ function parseGenBank(text) {
       if (current.type === 'CDS') {
         const labelName = current.gene || current.product;
         if (labelName) {
-          gLabels.push({ position: Math.floor((current.start + current.end) / 2), name: labelName });
+          gLabels.push({
+            position: Math.floor((current.start + current.end) / 2),
+            name: labelName,
+            category: current.category
+          });
         }
       }
     }
